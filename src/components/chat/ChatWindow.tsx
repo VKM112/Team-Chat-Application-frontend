@@ -57,7 +57,7 @@ const ChatWindow: React.FC = () => {
   const [messagesByChannel, setMessagesByChannel] = useState<Record<string, Message[]>>({});
 
   const withAuthRetry = useCallback(
-    async <T>(fn: () => Promise<T>, retry = true): Promise<T> => {
+    async function withAuthRetryImpl<T>(fn: () => Promise<T>, retry = true): Promise<T> {
       try {
         return await fn();
       } catch (error) {
@@ -69,7 +69,7 @@ const ChatWindow: React.FC = () => {
         ) {
           try {
             await refreshAccessToken();
-            return withAuthRetry(fn, false);
+            return withAuthRetryImpl(fn, false);
           } catch (refreshError) {
             logout();
             throw refreshError;
@@ -293,7 +293,7 @@ const ChatWindow: React.FC = () => {
                 className="w-full rounded-xl bg-emerald-400 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-950 transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-60"
                 disabled={isCreatingChannel}
               >
-                {isCreatingChannel ? 'Creating…' : 'Create channel'}
+                {isCreatingChannel ? 'Creating...' : 'Create channel'}
               </button>
             </form>
             <p className="mt-3 text-xs text-slate-500">Channel names must be unique.</p>
@@ -302,7 +302,7 @@ const ChatWindow: React.FC = () => {
 
         <main className="col-span-6 flex flex-col rounded-3xl border border-slate-800/80 bg-slate-900 shadow-lg">
           <div className="border-b border-slate-800/70 px-4 py-3 text-sm text-slate-400">
-            #{activeChannel?.name ?? 'None selected'} ·{' '}
+            #{activeChannel?.name ?? 'None selected'} -{' '}
             {activeChannel?.description ??
               'Select or create a channel to view messages'}
           </div>
@@ -343,7 +343,7 @@ const ChatWindow: React.FC = () => {
                   disabled={isChannelActionLoading}
                   className="rounded-full border border-rose-500 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-rose-200 transition hover:border-rose-300 disabled:opacity-50"
                 >
-                  {isChannelActionLoading ? 'Leaving…' : 'Leave'}
+                  {isChannelActionLoading ? 'Leaving...' : 'Leave'}
                 </button>
               ) : (
                 <button
@@ -352,7 +352,7 @@ const ChatWindow: React.FC = () => {
                   disabled={isChannelActionLoading || !activeChannel}
                   className="rounded-full border border-emerald-400 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-emerald-200 transition hover:border-emerald-300 disabled:opacity-50"
                 >
-                  {isChannelActionLoading ? 'Joining…' : 'Join'}
+                  {isChannelActionLoading ? 'Joining...' : 'Join'}
                 </button>
               )}
             </div>
