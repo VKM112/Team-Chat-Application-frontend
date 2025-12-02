@@ -1,8 +1,16 @@
 import axios, { AxiosHeaders } from 'axios';
 
+console.log('Environment variables:', {
+  VITE_API_BASE_URL: import.meta.env.VITE_API_BASE_URL,
+  VITE_API_SERVER: import.meta.env.VITE_API_SERVER,
+  VITE_API_PORT: import.meta.env.VITE_API_PORT
+});
+
 const serverBase =
   import.meta.env.VITE_API_BASE_URL ??
   `${import.meta.env.VITE_API_SERVER ?? `http://localhost:${import.meta.env.VITE_API_PORT ?? '5002'}`}/api`;
+
+console.log('Final API Base URL:', serverBase);
 
 const api = axios.create({
   baseURL: serverBase,
