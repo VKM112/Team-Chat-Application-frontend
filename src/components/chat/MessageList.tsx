@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import type { Message } from '../../types';
 
 interface MessageListProps {
@@ -33,6 +33,25 @@ const MessageList: React.FC<MessageListProps> = ({
   onEdit,
   onDelete
 }) => {
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  useEffect(() => {
+    const handleDocumentClick = (event: MouseEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (!target) {
+        return;
+      }
+      if (target.closest('[data-message-menu]') || target.closest('[data-menu-button]')) {
+        return;
+      }
+      setOpenMenuId(null);
+    };
+
+    document.addEventListener('click', handleDocumentClick);
+    return () => {
+      document.removeEventListener('click', handleDocumentClick);
+    };
+  }, []);
+
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editingText, setEditingText] = useState('');
 
@@ -74,33 +93,50 @@ const MessageList: React.FC<MessageListProps> = ({
             canEdit || activeChannelCreatorId === currentUserId;
 
           return (
-            <div
-              key={message.id}
-              className="rounded-2xl border bg-slate-900 px-4 py-3 text-sm shadow-sm transition"
-              style={{
-                borderColor: accentColor,
-                boxShadow: `0 0 0 1px ${accentColor}22`
-              }}
-            >
-              <div className="flex items-center justify-between text-xs text-slate-500">
-                <div className="flex items-center gap-2">
-                  <span
-                    className="h-2 w-2 rounded-full"
-                    style={{ backgroundColor: accentColor }}
-                  />
-                  <span className="font-semibold text-slate-100">
-                    {message.sender.username}
-                  </span>
-                </div>
-                <div className="flex items-center gap-1 text-[10px] uppercase tracking-wide">
-                  <span>{formatTime(message.timestamp)}</span>
-                  {message.editedAt && (
-                    <span className="text-slate-500">• edited</span>
-                  )}
-                </div>
+          <div
+            key={message.id}
+            className="relative rounded-2xl border bg-slate-900 px-4 py-3 text-sm shadow-sm transition"
+            style={{
+              borderColor: accentColor,
+              boxShadow: `0 0 0 1px ${accentColor}22`
+            }}
+          >
+            <div className="flex items-start justify-between text-xs text-slate-500">
+              <div className="flex items-center gap-2">
+                <span
+                  className="h-2 w-2 rounded-full"
+                  style={{ backgroundColor: accentColor }}
+                />
+                <span className="font-semibold text-slate-100">
+                  {message.sender.username}
+                </span>
               </div>
-              {isEditing ? (
-                <div className="mt-3 space-y-2">
+              <div className="flex items-center gap-1 text-[10px] uppercase tracking-wide">
+                <span>{formatTime(message.timestamp)}</span>
+                {message.editedAt && (
+                  <span className="text-slate-500">• edited</span>
+                )}
+                {(canEdit || canDelete) && (
+                  <button
+                    type="button"
+                    data-menu-button
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setOpenMenuId((prev) =>
+                        prev === message.id ? null : message.id
+                      );
+                    }}
+                    className="ml-2 rounded-full px-1 text-slate-400 transition hover:text-white"
+                    aria-haspopup="true"
+                    aria-expanded={openMenuId === message.id}
+                  >
+                    <span className="text-[18px] leading-none">⋮</span>
+                  </button>
+                )}
+              </div>
+            </div>
+            {isEditing ? (
+              <div className="mt-3 space-y-2">
                   <textarea
                     className="w-full rounded-2xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-slate-50 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/40"
                     value={editingText}
@@ -130,12 +166,20 @@ const MessageList: React.FC<MessageListProps> = ({
                 <p className="mt-1 text-slate-200">{message.content}</p>
               )}
               {!isEditing && (canEdit || canDelete) && (
-                <div className="mt-3 flex gap-2 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                <div
+                  data-message-menu
+                  className={`absolute right-3 top-8 w-32 rounded-2xl border border-slate-800 bg-slate-900 p-2 text-xs uppercase tracking-wide text-slate-200 shadow-xl transition ${
+                    openMenuId === message.id ? 'opacity-100' : 'pointer-events-none opacity-0'
+                  }`}
+                >
                   {canEdit && (
                     <button
                       type="button"
-                      onClick={() => startEditing(message)}
-                      className="rounded-full border border-slate-700 px-3 py-1 transition hover:border-emerald-400"
+                      onClick={() => {
+                        startEditing(message);
+                        setOpenMenuId(null);
+                      }}
+                      className="block w-full rounded-xl px-2 py-1 text-left transition hover:bg-slate-800"
                     >
                       Edit
                     </button>
@@ -143,8 +187,11 @@ const MessageList: React.FC<MessageListProps> = ({
                   {canDelete && (
                     <button
                       type="button"
-                      onClick={() => onDelete(message.id)}
-                      className="rounded-full border border-rose-500 px-3 py-1 text-rose-200 transition hover:border-rose-400"
+                      onClick={() => {
+                        onDelete(message.id);
+                        setOpenMenuId(null);
+                      }}
+                      className="mt-1 block w-full rounded-xl px-2 py-1 text-left text-rose-200 transition hover:bg-slate-800"
                     >
                       Delete
                     </button>
