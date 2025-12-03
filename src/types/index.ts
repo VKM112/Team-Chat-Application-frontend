@@ -12,6 +12,7 @@ export interface Channel {
   description: string;
   isPrivate?: boolean;
   members?: User[];
+  createdBy?: User;
 }
 
 export interface Message {
@@ -23,6 +24,7 @@ export interface Message {
   };
   content: string;
   timestamp: string;
+  editedAt?: string | null;
 }
 
 export interface AuthContextType {

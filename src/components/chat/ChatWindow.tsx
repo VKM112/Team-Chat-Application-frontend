@@ -9,23 +9,29 @@ import ChannelList from './ChannelList';
 import MessageInput from './MessageInput';
 import MessageList from './MessageList';
 import OnlineUsers from './OnlineUsers';
-import type { Channel, Message } from '../../types';
+import type { Channel, Message, User } from '../../types';
 import { useAuth } from '../../hooks/useAuth';
 import { useSocket } from '../../hooks/useSocket';
 import api from '../../services/api';
 import type { AxiosError } from 'axios';
+
+const mapUser = (userDoc: any): User => ({
+  id: (userDoc._id ?? userDoc.id)?.toString?.() ?? '',
+  username: userDoc.username ?? 'Unknown',
+  email:
+    userDoc.email ??
+    `${userDoc.username?.toLowerCase() ?? 'user'}@example.com`,
+  isOnline: userDoc.isOnline ?? false,
+  lastSeen: userDoc.lastSeen ? new Date(userDoc.lastSeen).toISOString() : undefined
+});
 
 const mapChannel = (channelDoc: any): Channel => ({
   id: (channelDoc._id ?? channelDoc.id)?.toString?.() ?? '',
   name: channelDoc.name,
   description: channelDoc.description,
   isPrivate: channelDoc.isPrivate,
-  members: channelDoc.members?.map((member: any) => ({
-    id: member._id ?? member.id ?? '',
-    username: member.username,
-    email: member.email ?? `${member.username?.toLowerCase() ?? 'user'}@example.com`,
-    isOnline: member.isOnline ?? false
-  }))
+  members: channelDoc.members?.map((member: any) => mapUser(member)),
+  createdBy: channelDoc.createdBy ? mapUser(channelDoc.createdBy) : undefined
 });
 
 const mapMessage = (messageDoc: any): Message => ({
@@ -41,7 +47,10 @@ const mapMessage = (messageDoc: any): Message => ({
     username: messageDoc.sender?.username ?? 'Unknown'
   },
   content: messageDoc.content,
-  timestamp: messageDoc.timestamp ?? new Date().toISOString()
+  timestamp: messageDoc.timestamp ?? new Date().toISOString(),
+  editedAt: messageDoc.editedAt
+    ? new Date(messageDoc.editedAt).toISOString()
+    : null
 });
 
 const ChatWindow: React.FC = () => {
@@ -209,11 +218,26 @@ const ChatWindow: React.FC = () => {
   };
 
   const handleSendMessage = (content: string) => {
+    if (!isMember) {
+      setChannelError('Join the channel to send messages');
+      return;
+    }
     if (!socket || !activeChannelId) return;
+    setChannelError(null);
     socket.emit('message:send', {
       channelId: activeChannelId,
       content
     });
+  };
+
+  const handleEditMessage = (messageId: string, content: string) => {
+    if (!socket) return;
+    socket.emit('message:edit', { messageId, content });
+  };
+
+  const handleDeleteMessage = (messageId: string) => {
+    if (!socket) return;
+    socket.emit('message:delete', { messageId });
   };
 
   useEffect(() => {
@@ -228,9 +252,37 @@ const ChatWindow: React.FC = () => {
         };
       });
     };
+    const handleUpdatedMessage = (message: any) => {
+      const mapped = mapMessage(message);
+      setMessagesByChannel((prev) => {
+        const existing = prev[mapped.channelId] ?? [];
+        return {
+          ...prev,
+          [mapped.channelId]: existing.map((msg) =>
+            msg.id === mapped.id ? mapped : msg
+          )
+        };
+      });
+    };
+    const handleDeletedMessage = (payload: any) => {
+      if (!payload?.channelId) return;
+      setMessagesByChannel((prev) => {
+        const existing = prev[payload.channelId] ?? [];
+        return {
+          ...prev,
+          [payload.channelId]: existing.filter(
+            (message) => message.id !== payload.messageId
+          )
+        };
+      });
+    };
     socket.on('message:new', handleNewMessage);
+    socket.on('message:updated', handleUpdatedMessage);
+    socket.on('message:deleted', handleDeletedMessage);
     return () => {
       socket.off('message:new', handleNewMessage);
+      socket.off('message:updated', handleUpdatedMessage);
+      socket.off('message:deleted', handleDeletedMessage);
     };
   }, [socket]);
 
@@ -367,8 +419,22 @@ const ChatWindow: React.FC = () => {
             </div>
           </div>
 
-          <MessageList messages={activeMessages} />
-          <MessageInput onSend={handleSendMessage} />
+          <MessageList
+            messages={activeMessages}
+            currentUserId={user?.id ?? null}
+            activeChannelCreatorId={activeChannel?.createdBy?.id ?? null}
+            onEdit={handleEditMessage}
+            onDelete={handleDeleteMessage}
+          />
+          <MessageInput
+            onSend={handleSendMessage}
+            disabled={!isMember}
+            disabledMessage={
+              !activeChannel
+                ? 'Select a channel to send messages'
+                : 'Join the channel to send messages'
+            }
+          />
         </main>
 
         <aside className="col-span-3">
