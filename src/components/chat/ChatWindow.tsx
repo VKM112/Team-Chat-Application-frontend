@@ -23,7 +23,8 @@ const mapChannel = (channelDoc: any): Channel => ({
   members: channelDoc.members?.map((member: any) => ({
     id: member._id ?? member.id ?? '',
     username: member.username,
-    email: member.email ?? `${member.username?.toLowerCase() ?? 'user'}@example.com`
+    email: member.email ?? `${member.username?.toLowerCase() ?? 'user'}@example.com`,
+    isOnline: member.isOnline ?? false
   }))
 });
 

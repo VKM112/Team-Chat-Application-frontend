@@ -19,11 +19,14 @@ const OnlineUsers: React.FC<OnlineUsersProps> = ({ users }) => {
                 <p className="font-semibold">{user.username}</p>
                 <p className="text-xs text-slate-500">{user.email}</p>
               </div>
-              <span
-                className={`h-3 w-3 rounded-full ${
-                  user.isOnline ? 'bg-emerald-400' : 'bg-slate-600'
-                }`}
-              />
+              <div className="flex flex-col items-center gap-1 text-[10px] uppercase tracking-wide text-slate-400">
+                <span
+                  className={`h-3 w-3 rounded-full ${
+                    user.isOnline ? 'bg-emerald-400' : 'bg-slate-600'
+                  }`}
+                />
+                <span>{user.isOnline ? 'Online' : 'Offline'}</span>
+              </div>
             </li>
           ))}
         </ul>
