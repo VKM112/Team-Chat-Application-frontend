@@ -159,6 +159,11 @@ const ChatWindow: React.FC = () => {
     [activeChannel, user]
   );
 
+  const isChannelCreator = useMemo(
+    () => Boolean(user && activeChannel?.createdBy?.id === user.id),
+    [activeChannel, user]
+  );
+
   const handleCreateChannel = async (event: FormEvent) => {
     event.preventDefault();
     if (!newChannelName.trim()) {
@@ -228,6 +233,30 @@ const ChatWindow: React.FC = () => {
       channelId: activeChannelId,
       content
     });
+  };
+
+  const handleDeleteChannel = async () => {
+    if (!activeChannel) return;
+    setIsChannelActionLoading(true);
+    setChannelError(null);
+    try {
+      await withAuthRetry(() => api.delete(`/channels/${activeChannel.id}`));
+      setChannelStatus(`Channel "${activeChannel.name}" deleted`);
+      setChannels((prev) => {
+        const updated = prev.filter((channel) => channel.id !== activeChannel.id);
+        setActiveChannelId(updated[0]?.id ?? null);
+        return updated;
+      });
+      setMessagesByChannel((prev) => {
+        const next = { ...prev };
+        delete next[activeChannel.id];
+        return next;
+      });
+    } catch (error) {
+      setChannelError('Unable to delete channel');
+    } finally {
+      setIsChannelActionLoading(false);
+    }
   };
 
   const handleEditMessage = (messageId: string, content: string) => {
@@ -310,8 +339,8 @@ const ChatWindow: React.FC = () => {
         </div>
       </header>
 
-      <div className="grid flex-1 grid-cols-12 gap-6 px-6 py-8">
-        <aside className="col-span-3 space-y-6">
+      <div className="grid flex-1 grid-cols-1 gap-6 px-4 py-6 md:grid-cols-12 md:px-6 md:py-8">
+        <aside className="col-span-12 space-y-6 md:col-span-3">
           <div className="rounded-3xl border border-slate-800/80 bg-slate-900 p-5 shadow-lg">
             <ChannelList
               channels={channels}
@@ -319,7 +348,6 @@ const ChatWindow: React.FC = () => {
               onSelect={(channel) => setActiveChannelId(channel.id)}
             />
           </div>
-
           <div className="rounded-3xl border border-slate-800/80 bg-slate-900 p-5 shadow-lg">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
               Create a channel
@@ -361,7 +389,7 @@ const ChatWindow: React.FC = () => {
           </div>
         </aside>
 
-        <main className="col-span-6 flex flex-col rounded-3xl border border-slate-800/80 bg-slate-900 shadow-lg">
+        <main className="col-span-12 flex flex-col rounded-3xl border border-slate-800/80 bg-slate-900 shadow-lg md:col-span-6">
           <div className="border-b border-slate-800/70 px-4 py-3 text-sm text-slate-400">
             #{activeChannel?.name ?? 'None selected'} -{' '}
             {activeChannel?.description ??
@@ -396,7 +424,7 @@ const ChatWindow: React.FC = () => {
                   : 'the team'}
               </span>
             </div>
-            <div className="mt-3 flex items-center gap-3">
+            <div className="mt-3 flex flex-wrap items-center gap-3">
               {isMember ? (
                 <button
                   type="button"
@@ -414,6 +442,16 @@ const ChatWindow: React.FC = () => {
                   className="rounded-full border border-emerald-400 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-emerald-200 transition hover:border-emerald-300 disabled:opacity-50"
                 >
                   {isChannelActionLoading ? 'Joining...' : 'Join'}
+                </button>
+              )}
+              {isChannelCreator && (
+                <button
+                  type="button"
+                  onClick={handleDeleteChannel}
+                  disabled={isChannelActionLoading}
+                  className="rounded-full border border-slate-700 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-400 transition hover:border-rose-300 hover:text-white disabled:opacity-50"
+                >
+                  {isChannelActionLoading ? 'Deleting...' : 'Delete'}
                 </button>
               )}
             </div>
@@ -437,7 +475,7 @@ const ChatWindow: React.FC = () => {
           />
         </main>
 
-        <aside className="col-span-3">
+        <aside className="col-span-12 md:col-span-3">
           <OnlineUsers users={activeChannel?.members ?? []} />
         </aside>
       </div>
