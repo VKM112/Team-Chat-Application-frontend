@@ -253,7 +253,10 @@ const ChatWindow: React.FC = () => {
         return next;
       });
     } catch (error) {
-      setChannelError('Unable to delete channel');
+      const axiosError = error as AxiosError;
+      const errorMessage =
+        axiosError.response?.data?.message ?? 'Unable to delete channel';
+      setChannelError(errorMessage);
     } finally {
       setIsChannelActionLoading(false);
     }
