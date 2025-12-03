@@ -95,7 +95,7 @@ const MessageList: React.FC<MessageListProps> = ({
           return (
           <div
             key={message.id}
-            className="relative rounded-2xl border bg-slate-900 px-4 py-3 text-sm shadow-sm transition"
+            className="relative overflow-visible rounded-2xl border bg-slate-900 px-4 py-3 text-sm shadow-sm transition"
             style={{
               borderColor: accentColor,
               boxShadow: `0 0 0 1px ${accentColor}22`
@@ -111,10 +111,10 @@ const MessageList: React.FC<MessageListProps> = ({
                   {message.sender.username}
                 </span>
               </div>
-              <div className="flex items-center gap-1 text-[10px] uppercase tracking-wide">
-                <span>{formatTime(message.timestamp)}</span>
-                {message.editedAt && (
-                  <span className="text-slate-500">• edited</span>
+                <div className="flex items-center gap-1 text-[10px] uppercase tracking-wide">
+                  <span>{formatTime(message.timestamp)}</span>
+                  {message.editedAt && (
+                    <span className="text-slate-500">• edited</span>
                 )}
                 {(canEdit || canDelete) && (
                   <button
@@ -168,7 +168,7 @@ const MessageList: React.FC<MessageListProps> = ({
               {!isEditing && (canEdit || canDelete) && (
                 <div
                   data-message-menu
-                  className={`absolute right-3 top-8 w-32 rounded-2xl border border-slate-800 bg-slate-900 p-2 text-xs uppercase tracking-wide text-slate-200 shadow-xl transition ${
+                  className={`absolute right-3 top-8 z-50 w-32 rounded-2xl border border-slate-800 bg-slate-900 p-2 text-xs uppercase tracking-wide text-slate-200 shadow-xl transition ${
                     openMenuId === message.id ? 'opacity-100' : 'pointer-events-none opacity-0'
                   }`}
                 >
