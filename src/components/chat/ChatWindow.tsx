@@ -122,6 +122,14 @@ const ChatWindow: React.FC = () => {
     }
   }, [activeChannelId, fetchMessages]);
 
+  useEffect(() => {
+    if (!socket || !activeChannelId) return undefined;
+    socket.emit('channel:join', activeChannelId);
+    return () => {
+      socket.emit('channel:leave', activeChannelId);
+    };
+  }, [socket, activeChannelId]);
+
   const activeChannel = useMemo(
     () => channels.find((channel) => channel.id === activeChannelId) ?? null,
     [channels, activeChannelId]
