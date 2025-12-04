@@ -1,73 +1,31 @@
-# React + TypeScript + Vite
+# Team Chat App — Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## Overview
+This folder contains the Vite + React + TypeScript SPA styled with Tailwind CSS. `main.tsx` mounts the `<App />` tree, `App.tsx` wires `AuthProvider`, `SocketProvider`, and route definitions, while the Tailwind/PostCSS config files ensure styles are compiled correctly.
 
-Currently, two official plugins are available:
+## Architecture
+- **Context**:
+  - `AuthContext.tsx` manages user/auth token state, persists values in `localStorage`, exposes `login`, `signup`, `refresh`, and `logout`, and automatically refreshes the access token when necessary.
+  - `SocketContext.tsx` watches `accessToken`; when present it builds a Socket.IO client via `services/socket.ts`.
+- **Hooks**: Lightweight helpers (`useAuth.ts`, `useSocket.ts`, `useRefreshToken.ts`) expose the above contexts.
+- **Services**:
+  - `api.ts` creates an Axios client whose base URL derives from `VITE_API_*` vars, logs chosen env values for debugging, and attaches the bearer token from storage on every request.
+  - `socket.ts` determines the backend URL (stripping `/api` from `VITE_API_BASE_URL` if needed) and creates authenticated Socket.IO instances.
+- **Routing & Pages**:
+  - `App.tsx` defines routes for `/login`, `/signup`, and `/chat`. The `ProtectedRoute` component guards `/chat` and redirects unauthenticated users.
+  - `components/auth/` holds the login/signup forms with inline error states, submission loading indicators, and navigation to the chat workspace after success.
+  - `components/chat/` drives the workspace UI: `ChatWindow.tsx` orchestrates channel/message data, handles CRUD actions, and wires socket listeners; `ChannelList`, `MessageList`, `MessageInput`, and `OnlineUsers` each render pieces of the experience with Tailwind styling.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Styling
+- Tailwind is wired via `tailwind.config.js` (watching `./src/**/*.{js,jsx,ts,tsx,html}` and `./public/index.html`) and PostCSS (via `postcss.config.js`) applies Tailwind and Autoprefixer.
+- Global styles are injected by `src/index.css`, which imports `@tailwind base`, `components`, and `utilities`.
 
-## React Compiler
+## Running
+1. Install dependencies: `npm install`
+2. Start the dev server: `npm run dev`
+3. Build for production: `npm run build`
+4. Preview the production build: `npm run preview` (host=Render preview defaults from `vite.config.ts`).
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## Environment
+- The frontend respects `VITE_API_BASE_URL`, `VITE_API_SERVER`, and `VITE_API_PORT` when constructing API/socket URLs. Fallbacks default to `http://localhost:5002`.
+- Axios requests automatically add `Authorization: Bearer <accessToken>` for authenticated routes.
